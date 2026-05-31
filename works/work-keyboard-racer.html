@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>键盘小司机 🚗</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Microsoft YaHei', sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* 顶部信息栏 */
+        .header {
+            width: 100%;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .stat {
+            color: #fff;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .stat span {
+            color: #ffd700;
+        }
+
+        /* 游戏场景 */
+        .game-container {
+            flex: 1;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 天空 */
+        .sky {
+            height: 35%;
+            background: linear-gradient(to bottom, #87CEEB 0%, #98D8C8 100%);
+            position: relative;
+        }
+
+        /* 白云 */
+        .cloud {
+            position: absolute;
+            background: white;
+            border-radius: 50px;
+            opacity: 0.9;
+        }
+
+        .cloud::before, .cloud::after {
+            content: '';
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .cloud-1 {
+            width: 80px;
+            height: 30px;
+            top: 30px;
+            left: 10%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .cloud-1::before {
+            width: 40px;
+            height: 40px;
+            top: -20px;
+            left: 10px;
+        }
+
+        .cloud-1::after {
+            width: 50px;
+            height: 50px;
+            top: -25px;
+            left: 35px;
+        }
+
+        .cloud-2 {
+            width: 100px;
+            height: 35px;
+            top: 60px;
+            right: 15%;
+            animation: float 10s ease-in-out infinite reverse;
+        }
+
+        .cloud-2::before {
+            width: 50px;
+            height: 50px;
+            top: -25px;
+            left: 15px;
+        }
+
+        .cloud-2::after {
+            width: 60px;
+            height: 60px;
+            top: -30px;
+            left: 45px;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(20px); }
+        }
+
+        /* 太阳 */
+        .sun {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: #FFD700;
+            border-radius: 50%;
+            top: 20px;
+            right: 10%;
+            box-shadow: 0 0 40px #FFD700;
+        }
+
+        /* 道路 */
+        .road {
+            height: 65%;
+            background: linear-gradient(to bottom, #7CB342 0%, #558B2F 100%);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 公路 */
+        .highway {
+            height: 60%;
+            background: #555;
+            position: relative;
+            display: flex;
+            align-items: center;
+            margin-top: auto;
+        }
+
+        /* 道路标线 */
+        .road-lines {
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: repeating-linear-gradient(
+                to right,
+                #FFD700 0px,
+                #FFD700 40px,
+                transparent 40px,
+                transparent 70px
+            );
+        }
+
+        /* 车辆容器 */
+        .vehicles-area {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            pointer-events: none;
+        }
+
+        /* 单个车辆 */
+        .vehicle {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.1s;
+            animation: drive 0.3s ease-in-out infinite;
+        }
+
+        @keyframes drive {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+
+        .vehicle-emoji {
+            font-size: 3.5rem;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3));
+        }
+
+        .vehicle-letter {
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(255,107,107,0.4);
+            border: 3px solid white;
+            margin-top: -5px;
+        }
+
+        /* 消除动画 */
+        .vehicle.hit {
+            animation: explode 0.4s ease-out forwards;
+        }
+
+        @keyframes explode {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.7; }
+            100% { transform: scale(0) rotate(360deg); opacity: 0; }
+        }
+
+        /* 星星特效 */
+        .star {
+            position: absolute;
+            font-size: 2rem;
+            animation: starFly 0.6s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes starFly {
+            0% { transform: scale(0) rotate(0deg); opacity: 1; }
+            50% { transform: scale(1.5) rotate(180deg); opacity: 1; }
+            100% { transform: scale(0.5) rotate(360deg) translateY(-100px); opacity: 0; }
+        }
+
+        /* 虚拟键盘 */
+        .keyboard {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(to bottom, #2c3e50 0%, #34495e 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .keyboard-row {
+            display: flex;
+            gap: 6px;
+        }
+
+        .key {
+            width: 45px;
+            height: 50px;
+            background: linear-gradient(to bottom, #ecf0f1 0%, #bdc3c7 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #2c3e50;
+            box-shadow: 0 4px 0 #7f8c8d, 0 6px 10px rgba(0,0,0,0.3);
+            transition: all 0.15s ease;
+            border: 2px solid #bdc3c7;
+        }
+
+        .key.active {
+            background: linear-gradient(to bottom, #FF6B6B 0%, #FF8E53 100%);
+            color: white;
+            box-shadow: 0 2px 0 #c0392b, 0 3px 15px rgba(255,107,107,0.6);
+            transform: translateY(2px);
+            border-color: #FF6B6B;
+        }
+
+        .key.wide {
+            width: 70px;
+        }
+
+        /* 开始/结束界面 */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .overlay.hidden {
+            display: none;
+        }
+
+        .title {
+            font-size: 3rem;
+            color: #FFD700;
+            text-shadow: 0 4px 20px rgba(255,215,0,0.5);
+            margin-bottom: 20px;
+        }
+
+        .subtitle {
+            color: #fff;
+            font-size: 1.3rem;
+            margin-bottom: 40px;
+            text-align: center;
+            line-height: 1.8;
+            opacity: 0.9;
+        }
+
+        .btn {
+            padding: 18px 50px;
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(255,107,107,0.4);
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(255,107,107,0.5);
+        }
+
+        /* 结果界面 */
+        .result {
+            text-align: center;
+        }
+
+        .result-title {
+            font-size: 2.5rem;
+            color: #FFD700;
+            margin-bottom: 30px;
+        }
+
+        .result-stats {
+            background: rgba(255,255,255,0.1);
+            padding: 30px 50px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+        }
+
+        .result-item {
+            color: #fff;
+            font-size: 1.4rem;
+            margin: 15px 0;
+        }
+
+        .result-item span {
+            color: #FFD700;
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        /* 难度选择 */
+        .difficulty-select {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .select-label {
+            color: #fff;
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+
+        .select-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .diff-btn {
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .diff-btn:hover, .diff-btn.selected {
+            background: rgba(255,107,107,0.5);
+            border-color: #FF6B6B;
+        }
+
+        .diff-btn.speed-slow { border-left: 4px solid #4CAF50; }
+        .diff-btn.speed-medium { border-left: 4px solid #FFC107; }
+        .diff-btn.speed-fast { border-left: 4px solid #F44336; }
+
+        .diff-btn.level-easy { border-left: 4px solid #4CAF50; }
+        .diff-btn.level-normal { border-left: 4px solid #2196F3; }
+        .diff-btn.level-hard { border-left: 4px solid #9C27B0; }
+
+        /* 速度指示器 */
+        .speed-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #fff;
+            font-size: 1rem;
+        }
+
+        .speed-bar {
+            width: 100px;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .speed-fill {
+            height: 100%;
+            background: linear-gradient(to right, #4CAF50, #FFC107, #F44336);
+            transition: width 0.3s ease;
+        }
+
+        /* 提示文字 */
+        .hint {
+            color: #aaa;
+            font-size: 1rem;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 开始界面 -->
+    <div class="overlay" id="startScreen">
+        <div class="title">🚗 键盘小司机 🚗</div>
+        <div class="subtitle">
+            各种可爱的小车会从马路上开来<br>
+            看到车身上的字母，快按对应的键！<br>
+            底部键盘会高亮提示你哦~
+        </div>
+        <div class="difficulty-select">
+            <!-- 速度选择 -->
+            <div class="select-row">
+                <div class="select-label">🎮 速度</div>
+                <button class="diff-btn speed-slow selected" data-speed="1">🐢 慢速</button>
+                <button class="diff-btn speed-medium" data-speed="2">🚶 中速</button>
+                <button class="diff-btn speed-fast" data-speed="3">🚀 快速</button>
+            </div>
+
+            <!-- 难度选择 -->
+            <div class="select-row">
+                <div class="select-label">📚 难度</div>
+                <button class="diff-btn level-easy selected" data-count="10" data-easy="true">⭐ 简单 (10辆)</button>
+                <button class="diff-btn level-normal" data-count="20" data-easy="false">🌟 普通 (20辆)</button>
+                <button class="diff-btn level-hard" data-count="26" data-easy="false">💪 挑战 (26辆)</button>
+            </div>
+        </div>
+        <button class="btn" id="startBtn">开始游戏</button>
+        <div class="hint">按键盘上的字母键来消除车辆</div>
+    </div>
+
+    <!-- 结束界面 -->
+    <div class="overlay hidden" id="endScreen">
+        <div class="result">
+            <div class="result-title">🎉 太棒了！🎉</div>
+            <div class="result-stats">
+                <div class="result-item">完成车辆：<span id="resultCount">0</span> 辆</div>
+                <div class="result-item">总用时：<span id="resultTime">0</span> 秒</div>
+                <div class="result-item">正确率：<span id="resultAccuracy">100</span>%</div>
+            </div>
+            <button class="btn" id="restartBtn">再玩一次</button>
+        </div>
+    </div>
+
+    <!-- 顶部信息栏 -->
+    <div class="header">
+        <div class="stat">得分：<span id="score">0</span></div>
+        <div class="stat speed-badge slow" id="speedBadge">🐢 慢速</div>
+        <div class="stat">⏱️ <span id="timer">0.0</span>秒</div>
+        <div class="stat">进度：<span id="progress">0</span>/<span id="total">10</span></div>
+    </div>
+
+    <!-- 游戏场景 -->
+    <div class="game-container">
+        <div class="sky">
+            <div class="sun"></div>
+            <div class="cloud cloud-1"></div>
+            <div class="cloud cloud-2"></div>
+        </div>
+        <div class="road">
+            <div class="highway">
+                <div class="road-lines"></div>
+                <div class="vehicles-area" id="vehiclesArea"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 虚拟键盘 -->
+    <div class="keyboard" id="keyboard"></div>
+
+    <script>
+        // 游戏配置
+        const VEHICLE_EMOJIS = ['🚗', '🚕', '🚒', '🚑', '🚓', '🚌', '🚚'];
+        const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+        // 速度配置（像素/帧）
+        const SPEED_CONFIG = {
+            1: { value: 1.2, label: '🐢 慢速' },
+            2: { value: 2, label: '🚶 中速' },
+            3: { value: 3, label: '🚀 快速' }
+        };
+
+        let gameState = {
+            isPlaying: false,
+            score: 0,
+            totalVehicles: 10,
+            spawnedVehicles: [],
+            hitCount: 0,
+            missedCount: 0,
+            startTime: null,
+            timerInterval: null,
+            spawnInterval: null,
+            currentDifficulty: 10,
+            currentSpeed: 1,
+            isEasyMode: true
+        };
+
+        // DOM 元素
+        const startScreen = document.getElementById('startScreen');
+        const endScreen = document.getElementById('endScreen');
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const scoreEl = document.getElementById('score');
+        const timerEl = document.getElementById('timer');
+        const progressEl = document.getElementById('progress');
+        const totalEl = document.getElementById('total');
+        const vehiclesArea = document.getElementById('vehiclesArea');
+        const keyboard = document.getElementById('keyboard');
+
+        // 初始化键盘
+        function initKeyboard() {
+            const rows = [
+                'QWERTYUIOP',
+                'ASDFGHJKL',
+                'ZXCVBNM'
+            ];
+
+            keyboard.innerHTML = '';
+
+            rows.forEach(row => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'keyboard-row';
+
+                for (const letter of row) {
+                    const key = document.createElement('div');
+                    key.className = 'key';
+                    key.id = `key-${letter}`;
+                    key.textContent = letter;
+                    rowDiv.appendChild(key);
+                }
+
+                keyboard.appendChild(rowDiv);
+            });
+        }
+
+        // 更新键盘高亮
+        function updateKeyboardHighlight() {
+            // 清除所有高亮
+            document.querySelectorAll('.key').forEach(k => k.classList.remove('active'));
+
+            if (gameState.spawnedVehicles.length === 0) return;
+
+            // 找到最靠右的车辆
+            const sortedVehicles = [...gameState.spawnedVehicles].sort((a, b) => b.x - a.x);
+            const closestVehicle = sortedVehicles[0];
+
+            if (closestVehicle) {
+                const keyEl = document.getElementById(`key-${closestVehicle.letter}`);
+                if (keyEl) {
+                    keyEl.classList.add('active');
+                }
+            }
+
+            // 如果有多辆车，也轻微高亮其他
+            sortedVehicles.slice(1, 3).forEach(v => {
+                const keyEl = document.getElementById(`key-${v.letter}`);
+                if (keyEl) {
+                    keyEl.classList.add('active');
+                }
+            });
+        }
+
+        // 生成车辆
+        function spawnVehicle() {
+            if (!gameState.isPlaying) return;
+
+            // 根据难度调整最大同时车辆数
+            const maxVehicles = gameState.isEasyMode ? 4 : 3;
+            if (gameState.spawnedVehicles.length >= maxVehicles) return;
+
+            const usedLetters = gameState.spawnedVehicles.map(v => v.letter);
+            const remainingLetters = LETTERS.filter(l => !usedLetters.includes(l) &&
+                !gameState.hitCount && gameState.spawnedVehicles.filter(v => v.letter === l).length === 0);
+
+            if (remainingLetters.length === 0 && gameState.spawnedVehicles.length === 0) {
+                // 所有字母都用完了
+                checkGameEnd();
+                return;
+            }
+
+            const letter = remainingLetters.length > 0
+                ? remainingLetters[Math.floor(Math.random() * remainingLetters.length)]
+                : LETTERS[Math.floor(Math.random() * LETTERS.length)];
+
+            const emoji = VEHICLE_EMOJIS[Math.floor(Math.random() * VEHICLE_EMOJIS.length)];
+
+            const vehicle = document.createElement('div');
+            vehicle.className = 'vehicle';
+            vehicle.innerHTML = `
+                <div class="vehicle-emoji">${emoji}</div>
+                <div class="vehicle-letter">${letter}</div>
+            `;
+
+            const vehicleData = {
+                element: vehicle,
+                letter: letter,
+                x: -120,
+                hit: false
+            };
+
+            vehicle.style.left = vehicle.x + 'px';
+            vehicle.style.top = '50%';
+            vehicle.style.transform = 'translateY(-50%)';
+
+            vehiclesArea.appendChild(vehicle);
+            gameState.spawnedVehicles.push(vehicleData);
+
+            // 移动动画
+            const moveVehicle = () => {
+                if (!gameState.isPlaying || vehicleData.hit) return;
+
+                const speed = SPEED_CONFIG[gameState.currentSpeed].value;
+                vehicleData.x += speed;
+                vehicle.style.left = vehicleData.x + 'px';
+
+                // 超出屏幕
+                if (vehicleData.x > window.innerWidth + 50) {
+                    if (!vehicleData.hit) {
+                        gameState.missedCount++;
+                        updateStats();
+                    }
+                    removeVehicle(vehicleData);
+                    checkGameEnd();
+                } else {
+                    requestAnimationFrame(moveVehicle);
+                }
+            };
+
+            requestAnimationFrame(moveVehicle);
+            updateKeyboardHighlight();
+        }
+
+        // 移除车辆
+        function removeVehicle(vehicleData) {
+            vehicleData.element.remove();
+            gameState.spawnedVehicles = gameState.spawnedVehicles.filter(v => v !== vehicleData);
+            updateKeyboardHighlight();
+        }
+
+        // 击中车辆
+        function hitVehicle(letter) {
+            const vehicleData = gameState.spawnedVehicles.find(v => v.letter === letter && !v.hit);
+
+            if (vehicleData) {
+                vehicleData.hit = true;
+                vehicleData.element.classList.add('hit');
+
+                // 星星特效
+                createStars(vehicleData.x + 50, 100);
+
+                gameState.score++;
+                gameState.hitCount++;
+                updateStats();
+
+                setTimeout(() => {
+                    removeVehicle(vehicleData);
+                    checkGameEnd();
+                }, 400);
+            }
+        }
+
+        // 创建星星特效
+        function createStars(x, y) {
+            const stars = ['✨', '⭐', '🌟', '💫'];
+            for (let i = 0; i < 4; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.textContent = stars[Math.floor(Math.random() * stars.length)];
+                star.style.left = (x + Math.random() * 60 - 30) + 'px';
+                star.style.top = (y + Math.random() * 40 - 20) + 'px';
+                vehiclesArea.appendChild(star);
+
+                setTimeout(() => star.remove(), 600);
+            }
+        }
+
+        // 更新统计
+        function updateStats() {
+            scoreEl.textContent = gameState.score;
+            progressEl.textContent = gameState.hitCount;
+        }
+
+        // 更新计时器
+        function updateTimer() {
+            if (!gameState.startTime) return;
+            const elapsed = ((Date.now() - gameState.startTime) / 1000).toFixed(1);
+            timerEl.textContent = elapsed;
+        }
+
+        // 检查游戏结束
+        function checkGameEnd() {
+            if (gameState.hitCount >= gameState.totalVehicles) {
+                endGame();
+            }
+        }
+
+        // 开始游戏
+        function startGame() {
+            gameState = {
+                isPlaying: true,
+                score: 0,
+                totalVehicles: gameState.currentDifficulty,
+                spawnedVehicles: [],
+                hitCount: 0,
+                missedCount: 0,
+                startTime: Date.now(),
+                timerInterval: null,
+                spawnInterval: null,
+                currentDifficulty: gameState.currentDifficulty,
+                currentSpeed: gameState.currentSpeed,
+                isEasyMode: gameState.isEasyMode
+            };
+
+            vehiclesArea.innerHTML = '';
+            startScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
+
+            // 更新速度徽章
+            const speedBadge = document.getElementById('speedBadge');
+            const speedLabels = { 1: '🐢 慢速', 2: '🚶 中速', 3: '🚀 快速' };
+            const speedClasses = { 1: 'slow', 2: 'medium', 3: 'fast' };
+            speedBadge.textContent = speedLabels[gameState.currentSpeed];
+            speedBadge.className = 'stat speed-badge ' + speedClasses[gameState.currentSpeed];
+
+            totalEl.textContent = gameState.totalVehicles;
+            updateStats();
+
+            // 启动计时器
+            gameState.timerInterval = setInterval(updateTimer, 100);
+
+            // 根据难度调整生成间隔
+            const spawnInterval = gameState.isEasyMode ? 1800 : 1400;
+            gameState.spawnInterval = setInterval(spawnVehicle, spawnInterval);
+
+            // 立即生成第一辆
+            setTimeout(spawnVehicle, 500);
+        }
+
+        // 结束游戏
+        function endGame() {
+            gameState.isPlaying = false;
+            clearInterval(gameState.timerInterval);
+            clearInterval(gameState.spawnInterval);
+
+            const elapsed = ((Date.now() - gameState.startTime) / 1000).toFixed(1);
+            const accuracy = Math.round((gameState.hitCount / gameState.totalVehicles) * 100);
+
+            document.getElementById('resultCount').textContent = gameState.hitCount;
+            document.getElementById('resultTime').textContent = elapsed;
+            document.getElementById('resultAccuracy').textContent = accuracy;
+
+            endScreen.classList.remove('hidden');
+        }
+
+        // 键盘事件
+        document.addEventListener('keydown', (e) => {
+            if (!gameState.isPlaying) return;
+
+            const letter = e.key.toUpperCase();
+            if (LETTERS.includes(letter)) {
+                hitVehicle(letter);
+            }
+        });
+
+        // 按钮事件
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', startGame);
+
+        // 速度选择
+        document.querySelectorAll('.diff-btn[data-speed]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.diff-btn[data-speed]').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                gameState.currentSpeed = parseInt(btn.dataset.speed);
+            });
+        });
+
+        // 难度选择
+        document.querySelectorAll('.diff-btn[data-count]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.diff-btn[data-count]').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                gameState.currentDifficulty = parseInt(btn.dataset.count);
+                gameState.isEasyMode = btn.dataset.easy === 'true';
+            });
+        });
+
+        // 初始化
+        initKeyboard();
+        totalEl.textContent = gameState.currentDifficulty;
+    </script>
+</body>
+</html>
